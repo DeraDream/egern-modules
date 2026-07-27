@@ -1,4 +1,5 @@
 const COOKIE_STORAGE_KEY = "tieba_checkin_accounts";
+const LAST_CAPTURED_COOKIE_KEY = "tieba_checkin_last_captured_cookie";
 const INVALID_FORUMS = new Set(["贴吧10周年"]);
 const DIRECT = "DIRECT";
 const USER_AGENT =
@@ -47,6 +48,14 @@ async function captureCookie(ctx) {
     console.log("贴吧请求中没有 Cookie，跳过保存");
     return;
   }
+
+  // 贴吧启动时会并发请求多个匹配接口。必须在第一个异步请求前写入去重标记，
+  // 否则多个脚本实例会同时判断为新 Cookie 并重复通知。
+  if (ctx.storage.get(LAST_CAPTURED_COOKIE_KEY) === cookie) {
+    console.log("同一份贴吧 Cookie 已捕获，跳过重复处理");
+    return;
+  }
+  ctx.storage.set(LAST_CAPTURED_COOKIE_KEY, cookie);
 
   const accounts = ctx.storage.getJSON(COOKIE_STORAGE_KEY) || {};
   let userId = "default";
@@ -264,4 +273,3 @@ export default async function (ctx) {
     });
   }
 }
-
