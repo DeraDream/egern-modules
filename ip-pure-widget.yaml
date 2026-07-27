@@ -1,0 +1,17 @@
+name: "IP Pure Widget"
+description: "显示 Egern 当前网络出口的 IP、ASN、位置与纯净度"
+author: "DeraDream"
+homepage: "https://github.com/DeraDream/egern-modules"
+icon: "network"
+
+scriptings:
+  - generic:
+      name: "ip-pure-widget"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-pure-widget.js?v=1"
+      timeout: 20
+      update_interval: 3600
+
+widgets:
+  - name: "IP Pure"
+    script_name: "ip-pure-widget"
+
