@@ -1,5 +1,5 @@
 const COOKIE_STORAGE_KEY = "tieba_checkin_accounts";
-const LAST_CAPTURED_COOKIE_KEY = "tieba_checkin_last_captured_cookie";
+const LAST_CAPTURED_ACCOUNT_KEY = "tieba_checkin_last_captured_account";
 const INVALID_FORUMS = new Set(["贴吧10周年"]);
 const DIRECT = "DIRECT";
 const USER_AGENT =
@@ -16,6 +16,16 @@ function cookieHeaders(cookie, referer = "https://tieba.baidu.com/") {
     Referer: referer,
     "User-Agent": USER_AGENT,
   };
+}
+
+function accountFingerprint(cookie) {
+  const bduss = /(?:^|;\s*)BDUSS=([^;]+)/i.exec(cookie)?.[1] || cookie;
+  let hash = 2166136261;
+  for (let index = 0; index < bduss.length; index += 1) {
+    hash ^= bduss.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16);
 }
 
 async function getJson(ctx, url, options = {}) {
@@ -49,13 +59,14 @@ async function captureCookie(ctx) {
     return;
   }
 
-  // 贴吧启动时会并发请求多个匹配接口。必须在第一个异步请求前写入去重标记，
-  // 否则多个脚本实例会同时判断为新 Cookie 并重复通知。
-  if (ctx.storage.get(LAST_CAPTURED_COOKIE_KEY) === cookie) {
-    console.log("同一份贴吧 Cookie 已捕获，跳过重复处理");
-    return;
+  // 同一账号的不同请求会携带略有差异的临时 Cookie，使用稳定的 BDUSS
+  // 指纹去重，且不在存储和日志中额外暴露 BDUSS 原文。
+  const fingerprint = accountFingerprint(cookie);
+  const shouldNotify =
+    ctx.storage.get(LAST_CAPTURED_ACCOUNT_KEY) !== fingerprint;
+  if (shouldNotify) {
+    ctx.storage.set(LAST_CAPTURED_ACCOUNT_KEY, fingerprint);
   }
-  ctx.storage.set(LAST_CAPTURED_COOKIE_KEY, cookie);
 
   const accounts = ctx.storage.getJSON(COOKIE_STORAGE_KEY) || {};
   let userId = "default";
@@ -74,13 +85,17 @@ async function captureCookie(ctx) {
   ctx.storage.setJSON(COOKIE_STORAGE_KEY, accounts);
   console.log(`已保存贴吧账号 ${userId} 的 Cookie`);
 
-  ctx.notify({
-    title: "百度贴吧",
-    subtitle: `账号 ${userId}`,
-    body: "🎈 获取 Cookie 成功",
-    sound: true,
-    duration: 8,
-  });
+  if (shouldNotify) {
+    ctx.notify({
+      title: "百度贴吧",
+      subtitle: `账号 ${userId}`,
+      body: "🎈 获取 Cookie 成功",
+      sound: true,
+      duration: 8,
+    });
+  } else {
+    console.log(`账号 ${userId} 的 Cookie 已静默更新`);
+  }
 }
 
 async function getForumList(ctx, cookie) {
