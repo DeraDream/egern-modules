@@ -1,5 +1,14 @@
 # egern-modules
 
+## 高德地图去广告
+
+Egern 原生模块：[`amap-adblock.yaml`](./amap-adblock.yaml)
+
+- 清理开屏、首页、搜索、路线规划、导航结束、附近和打车页面推广
+- 使用 Egern 原生 YAML 和 `export default(ctx)` 脚本
+- 不依赖会将 Egern 请求重定向至 Telegram 的 Loon 脚本地址
+- 需要已安装并信任 Egern MITM 证书
+
 ## Egern 主配置模块段
 
 将 [`Profile.modules.yaml`](./Profile.modules.yaml) 中的整个 `modules:` 段合并到
