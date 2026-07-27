@@ -1,7 +1,9 @@
 const COOKIE_STORAGE_KEY = "tieba_checkin_accounts";
 const LAST_CAPTURED_ACCOUNT_KEY = "tieba_checkin_last_captured_account";
+const LAST_RESULT_KEY = "tieba_checkin_last_result";
 const INVALID_FORUMS = new Set(["贴吧10周年"]);
 const DIRECT = "DIRECT";
+const MANUAL_TRIGGER_URL = "http://tieba-checkin.local/run";
 const USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) " +
   "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
@@ -232,12 +234,16 @@ async function runCheckIn(ctx) {
       sound: true,
       duration: 5,
     });
-    return {
+    const result = {
+      day: currentDay(),
+      time: new Date().toISOString(),
       total: 0,
       success: 0,
-      failed: 0,
+      failed: 1,
       message: "没有 Cookie，请先打开贴吧 App",
     };
+    ctx.storage.setJSON(LAST_RESULT_KEY, result);
+    return result;
   }
 
   const reports = [];
@@ -278,20 +284,37 @@ async function runCheckIn(ctx) {
     },
   });
 
-  return {
+  const result = {
+    day: currentDay(),
+    time: new Date().toISOString(),
     total,
     success,
     failed: failures.length,
     message: failures.length ? failures[0] : "全部签到完成",
   };
+  ctx.storage.setJSON(LAST_RESULT_KEY, result);
+  return result;
 }
 
-function renderCheckInWidget(result) {
-  const ok = result.failed === 0 && result.total > 0;
+function currentDay() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function renderCheckInWidget(ctx) {
+  const result = ctx.storage.getJSON(LAST_RESULT_KEY);
+  const signedToday = result && result.day === currentDay();
+  const statusColor = !signedToday
+    ? "#FDE68A"
+    : result.failed > 0
+      ? "#FCA5A5"
+      : "#86EFAC";
+
   return {
     type: "widget",
-    url: "https://tieba.baidu.com/",
-    refreshAfter: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    refreshAfter: new Date(Date.now() + 60 * 1000).toISOString(),
     padding: 16,
     gap: 9,
     backgroundGradient: {
@@ -304,41 +327,90 @@ function renderCheckInWidget(result) {
     children: [
       {
         type: "text",
-        text: ok ? "✅ 贴吧签到完成" : "⚠️ 贴吧签到结果",
+        text: "百度贴吧",
         font: { size: "headline", weight: "bold" },
         textColor: "#FFFFFF",
       },
       {
         type: "text",
-        text: `成功/已签 ${result.success}/${result.total}`,
+        text: signedToday
+          ? result.failed > 0
+            ? "今日签到部分失败"
+            : "今日已签到"
+          : "今日尚未签到",
         font: { size: "title3", weight: "semibold" },
-        textColor: "#FFFFFF",
+        textColor: statusColor,
       },
       {
         type: "text",
-        text: result.message,
+        text: signedToday
+          ? `贴吧 ${result.total} · 成功 ${result.success} · 失败 ${result.failed}`
+          : "点击下方按钮立即执行",
         font: { size: "caption1" },
         textColor: "#DCE8FF",
-        maxLines: 2,
       },
       { type: "spacer" },
       {
-        type: "text",
-        text: "刷新小组件可再次签到",
-        font: { size: "caption2" },
-        textColor: "#BBD2FF",
+        type: "stack",
+        url: MANUAL_TRIGGER_URL,
+        direction: "row",
+        alignItems: "center",
+        padding: [9, 14],
+        borderRadius: 10,
+        backgroundColor: signedToday ? "#FFFFFF24" : "#FFFFFF",
+        children: [
+          {
+            type: "image",
+            src: signedToday
+              ? "sf-symbol:arrow.clockwise"
+              : "sf-symbol:checkmark.circle.fill",
+            color: signedToday ? "#FFFFFF" : "#0B5FFF",
+            width: 16,
+            height: 16,
+          },
+          { type: "spacer", length: 7 },
+          {
+            type: "text",
+            text: signedToday ? "重新签到" : "立即签到",
+            font: { size: "subheadline", weight: "bold" },
+            textColor: signedToday ? "#FFFFFF" : "#0B5FFF",
+          },
+        ],
       },
     ],
   };
 }
 
+function manualResultResponse(ctx, result) {
+  const title = result.failed ? "贴吧签到部分失败" : "贴吧签到完成";
+  const html = `<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f6fb;
+color:#172033;margin:0;padding:48px 22px}.card{max-width:520px;margin:auto;
+background:#fff;border-radius:22px;padding:28px;box-shadow:0 10px 40px #18356b18}
+h1{font-size:25px;margin:0 0 22px;color:#075fe4}.row{font-size:18px;
+line-height:1.9}.hint{margin-top:22px;color:#6d778a;font-size:14px}</style>
+<div class="card"><h1>${title}</h1>
+<div class="row">贴吧：${result.total}<br>成功/已签：${result.success}<br>
+失败：${result.failed}</div><div class="hint">${result.message}</div></div>`;
+  return ctx.respond({
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+    body: html,
+  });
+}
+
 export default async function (ctx) {
   try {
-    if (ctx.request?.url) await captureCookie(ctx);
-    else {
-      const result = await runCheckIn(ctx);
-      if (ctx.widgetFamily) return renderCheckInWidget(result);
+    if (ctx.request?.url === MANUAL_TRIGGER_URL) {
+      return manualResultResponse(ctx, await runCheckIn(ctx));
     }
+    if (ctx.request?.url) return await captureCookie(ctx);
+    if (ctx.widgetFamily) return renderCheckInWidget(ctx);
+    await runCheckIn(ctx);
   } catch (error) {
     console.log(`贴吧脚本异常：${error.stack || error.message || error}`);
     ctx.notify({
@@ -347,12 +419,12 @@ export default async function (ctx) {
       sound: true,
       duration: 5,
     });
-    if (ctx.widgetFamily) {
-      return renderCheckInWidget({
-        total: 0,
-        success: 0,
-        failed: 1,
-        message: error.message || String(error),
+    if (ctx.widgetFamily) return renderCheckInWidget(ctx);
+    if (ctx.request?.url === MANUAL_TRIGGER_URL) {
+      return ctx.respond({
+        status: 500,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+        body: `贴吧签到失败：${error.message || String(error)}`,
       });
     }
   }

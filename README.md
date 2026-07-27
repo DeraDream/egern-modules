@@ -14,11 +14,10 @@ Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
 
 - 打开贴吧 App 时自动保存 Cookie
 - 每天 00:01 签到关注的贴吧
-- 可在 Egern 小组件画廊打开或刷新「贴吧立即签到」立即执行
+- Egern 内部画廊显示今日签到状态，并可点按按钮立即执行
 - 支持多账号和失败重试
 - 使用 Egern 原生 `ctx.notify()` 通知签到结果
 
-手动画廊入口使用独立模块：[`tieba-checkin-now.yaml`](./tieba-checkin-now.yaml)
 
 ## 海外代理出口切换通知
 
