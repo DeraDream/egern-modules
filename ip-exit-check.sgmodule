@@ -1,15 +1,15 @@
-#!name=出口 IP 检测
-#!desc=强制检测所选 Egern 策略组的 IPv4 出口、ASN 与纯净度
-#!author=Codex
+#!name=IP-Pure
+#!desc=节点 IP 纯净度检测（IPPure）,请先在参数内选择策略组。
+#!category=网络检测
 #!arguments=Proxy:DIRECT,MarkIP:false
-#!arguments-desc=Proxy: 选择要检测的策略组，默认 DIRECT。@MarkIP: 是否隐藏部分 IP（true/false）。
+#!arguments-desc=Proxy: 选择策略组,默认DIRECT. @from wish | MarkIP: IP 打码(true/false),默认 false
 
 [Rule]
-DOMAIN,ipv4.ippubblico.org,{{{Proxy}}}
-DOMAIN,reputation.noc.org,{{{Proxy}}}
+# 确保检测请求走选定的代理策略
+DOMAIN-SUFFIX,ippure.com,{{{Proxy}}}
 
 [Panel]
-出口 IP 检测 = script-name=出口 IP 检测, title=出口 IP 检测, content=刷新中…, style=info, update-interval=300
+IP-Pure = script-name=IP-Pure, title=IP 纯净度, content=刷新中…, style=info, update-interval=300
 
 [Script]
-出口 IP 检测 = type=generic, timeout=20, argument={{{MarkIP}}}, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js?v=4
+IP-Pure = type=generic, timeout=10, argument={{{MarkIP}}}, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js?v=5
