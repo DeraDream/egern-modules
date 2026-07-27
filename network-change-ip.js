@@ -1,6 +1,6 @@
-const STORAGE_KEY = "network_change_ip_last_notification_v1";
-const DUPLICATE_WINDOW_MS = 20 * 1000;
-const SETTLE_DELAY_MS = 3 * 1000;
+const STORAGE_KEY = "proxy_exit_ip_monitor_v2";
+const ERROR_STORAGE_KEY = "proxy_exit_ip_monitor_error_v2";
+const ERROR_NOTIFY_INTERVAL_MS = 60 * 60 * 1000;
 
 const IP_SERVICES = [
   {
@@ -14,35 +14,32 @@ const IP_SERVICES = [
 ];
 
 export default async function (ctx) {
-  // 网络变化时系统可能连续触发数次，先等待路由和代理出口稳定。
-  await sleep(SETTLE_DELAY_MS);
+  const policy = (ctx.env && ctx.env.POLICY) || "🚀 节点选择";
 
   try {
-    const ip = await getExitIPv4(ctx);
-    const now = Date.now();
+    const ip = await getExitIPv4(ctx, policy);
     const previous = ctx.storage.getJSON(STORAGE_KEY);
 
-    if (
-      previous &&
-      previous.ip === ip &&
-      now - Number(previous.time || 0) < DUPLICATE_WINDOW_MS
-    ) {
+    // 定时任务每 10 秒执行；出口没有变化时保持安静。
+    if (previous && previous.ip === ip) {
       return;
     }
 
     const info = ctx.lookupIP(ip) || {};
-    const network = getNetworkName(ctx.device);
     const location = [countryFlag(info.country), info.country]
       .filter(Boolean)
       .join(" ");
     const asn = info.asn ? `AS${info.asn}` : "ASN 未知";
     const organization = info.organization || "运营商未知";
+    const isFirstRun = !previous || !previous.ip;
 
-    ctx.storage.setJSON(STORAGE_KEY, { ip, time: now });
+    ctx.storage.setJSON(STORAGE_KEY, { ip, time: Date.now(), policy });
+    ctx.storage.delete(ERROR_STORAGE_KEY);
     ctx.notify({
-      title: "网络已切换",
-      subtitle: network,
+      title: isFirstRun ? "代理出口监控已启动" : "海外代理出口已切换",
+      subtitle: `策略：${policy}`,
       body: [
+        ...(!isFirstRun ? [`原出口：${previous.ip}`] : []),
         `出口 IPv4：${ip}`,
         `${location || "位置未知"} · ${asn}`,
         organization,
@@ -55,23 +52,18 @@ export default async function (ctx) {
       },
     });
   } catch (error) {
-    ctx.notify({
-      title: "网络已切换",
-      subtitle: getNetworkName(ctx.device),
-      body: `出口 IPv4 查询失败：${errorMessage(error)}`,
-      sound: true,
-      duration: 5,
-    });
+    notifyErrorAtMostHourly(ctx, policy, error);
   }
 }
 
-async function getExitIPv4(ctx) {
+async function getExitIPv4(ctx, policy) {
   let lastError = new Error("没有可用的 IPv4 查询接口");
 
   for (const service of IP_SERVICES) {
     try {
       const response = await ctx.http.get(service.url, {
         timeout: 10000,
+        policy,
         headers: { Accept: "application/json, text/plain" },
       });
 
@@ -92,18 +84,19 @@ async function getExitIPv4(ctx) {
   throw lastError;
 }
 
-function getNetworkName(device) {
-  const ssid = device && device.wifi && device.wifi.ssid;
-  if (ssid) return `Wi-Fi：${ssid}`;
+function notifyErrorAtMostHourly(ctx, policy, error) {
+  const now = Date.now();
+  const previousErrorTime = Number(ctx.storage.get(ERROR_STORAGE_KEY) || 0);
+  if (now - previousErrorTime < ERROR_NOTIFY_INTERVAL_MS) return;
 
-  const cellular = device && device.cellular;
-  if (cellular && (cellular.carrier || cellular.radio)) {
-    return ["蜂窝网络", cellular.carrier, cellular.radio]
-      .filter(Boolean)
-      .join(" · ");
-  }
-
-  return "当前网络";
+  ctx.storage.set(ERROR_STORAGE_KEY, String(now));
+  ctx.notify({
+    title: "代理出口检测失败",
+    subtitle: `策略：${policy}`,
+    body: errorMessage(error),
+    sound: true,
+    duration: 5,
+  });
 }
 
 function isIPv4(value) {
@@ -124,10 +117,6 @@ function countryFlag(countryCode) {
   return String.fromCodePoint(
     ...[...code].map((character) => 127397 + character.charCodeAt(0))
   );
-}
-
-function sleep(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function errorMessage(error) {
