@@ -1,0 +1,39 @@
+# Egern 主配置模块段
+# 把下面整个 `modules:` 段合并到你正在使用的 Profile.yaml 顶层。
+# 不要把本文件当成独立模块导入；它是主配置片段。
+modules:
+  - name: "哔哩哔哩去广告 8.13"
+    url: "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%E5%8E%BB%E5%B9%BF%E5%91%8A.official.sgmodule"
+    enabled: true
+    update_interval: 86400
+
+  - name: "腾讯新闻去广告"
+    url: "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E8%85%BE%E8%AE%AF%E6%96%B0%E9%97%BB%E5%8E%BB%E5%B9%BF%E5%91%8A.official.sgmodule"
+    enabled: true
+    update_interval: 86400
+
+  - name: "菜鸟去广告"
+    url: "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/%E8%8F%9C%E9%B8%9F%E5%8E%BB%E5%B9%BF%E5%91%8A.beta.sgmodule"
+    enabled: true
+    update_interval: 86400
+
+  - name: "YouTube 去广告"
+    url: "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/YouTube%E5%8E%BB%E5%B9%BF%E5%91%8A%5BMaasea%5D.official.sgmodule"
+    enabled: true
+    update_interval: 86400
+
+  - name: "当前海外 IP 出口"
+    url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-pure-widget.yaml"
+    enabled: true
+    update_interval: 3600
+
+  # 基础依赖必须位于模块列表最下方，确保优先生效。
+  - name: "广告平台拦截器"
+    url: "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E6%8B%A6%E6%88%AA%E5%99%A8.beta.sgmodule"
+    enabled: true
+    update_interval: 86400
+
+  - name: "HTTPDNS 拦截器"
+    url: "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/HTTPDNS%E6%8B%A6%E6%88%AA%E5%99%A8.beta.sgmodule"
+    enabled: true
+    update_interval: 86400
