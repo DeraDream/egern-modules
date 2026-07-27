@@ -18,6 +18,8 @@ Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
 - 支持多账号和失败重试
 - 使用 Egern 原生 `ctx.notify()` 通知签到结果
 
+手动画廊入口使用独立模块：[`tieba-checkin-now.yaml`](./tieba-checkin-now.yaml)
+
 ## 海外代理出口切换通知
 
 Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip.yaml)

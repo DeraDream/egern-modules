@@ -1,0 +1,16 @@
+name: "贴吧立即签到"
+description: "在 Egern 小组件画廊中手动执行一次百度贴吧签到"
+author: "DeraDream"
+homepage: "https://github.com/DeraDream/egern-modules"
+icon: "checkmark.circle.fill"
+
+scriptings:
+  - generic:
+      name: "tieba-checkin-now"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js?v=5"
+      timeout: 300
+      update_interval: 86400
+
+widgets:
+  - name: "贴吧立即签到"
+    script_name: "tieba-checkin-now"
