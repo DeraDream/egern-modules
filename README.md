@@ -30,6 +30,6 @@ Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip.yaml)
 
 Egern 原生模块：[`tiktok-auto-region.yaml`](./tiktok-auto-region.yaml)
 
-- TikTok 流量强制使用「🚀 节点选择」
+- TikTok 流量强制使用「🎵 TikTok」策略组当前选中的节点
 - 地区直接跟随代理出口 IP，不使用已失效的地区重写脚本
 - 不需要 MITM，不修改 TikTok 请求内容

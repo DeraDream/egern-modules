@@ -1,5 +1,5 @@
 name: "TikTok 自动随节点选区"
-description: "将 TikTok 流量交给「🚀 节点选择」；地区自动跟随节点出口 IP，无失效脚本、无 MITM"
+description: "将 TikTok 流量交给「🎵 TikTok」策略组；地区自动跟随当前节点出口 IP，无失效脚本、无 MITM"
 author: "DeraDream"
 homepage: "https://github.com/DeraDream/egern-modules"
 manual: "https://github.com/Semporia/TikTok-Unlock"
@@ -9,5 +9,5 @@ rules:
   - rule_set:
       name: "TikTok 自动随节点选区"
       match: "https://raw.githubusercontent.com/Semporia/TikTok-Unlock/master/Surge/TikTok.list"
-      policy: "🚀 节点选择"
+      policy: "🎵 TikTok"
       update_interval: 86400
