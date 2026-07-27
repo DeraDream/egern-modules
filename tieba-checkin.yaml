@@ -27,6 +27,7 @@ scriptings:
 
 widgets:
   - name: "贴吧立即签到"
+    script_name: "贴吧立即签到"
 
 mitm:
   hostnames:
