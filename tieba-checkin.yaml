@@ -1,0 +1,27 @@
+name: "百度贴吧自动签到"
+description: "自动获取贴吧 Cookie，每日签到关注的贴吧，并通过 Egern 原生通知报告结果"
+author: "DeraDream（基于 blackmatrix7 贴吧签到逻辑改写）"
+homepage: "https://github.com/DeraDream/egern-modules"
+icon: "checkmark.seal.fill"
+
+scriptings:
+  - http_request:
+      name: "贴吧 Cookie 获取"
+      match: "^https?://(c\\.tieba\\.baidu\\.com|tiebac\\.baidu\\.com|180\\.97\\.\\d+\\.\\d+)/(c/s/(login|channelIconConfig|getClientConfig)|c/u/follow/getFoldedMessageUserInfo)"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js"
+      timeout: 30
+      update_interval: 86400
+
+  - schedule:
+      name: "贴吧每日签到"
+      cron: "30 9 * * *"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js"
+      timeout: 300
+      update_interval: 86400
+
+mitm:
+  hostnames:
+    includes:
+      - "c.tieba.baidu.com"
+      - "tiebac.baidu.com"
+
