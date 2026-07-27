@@ -20,7 +20,6 @@ function renderWidget(family, data) {
   const isIPv6 = ip.indexOf(":") !== -1;
   const risk = Number(data.fraudScore);
   const hasRisk = Number.isFinite(risk);
-  const purity = hasRisk ? Math.max(0, Math.min(100, 100 - risk)) : null;
   const style = riskStyle(risk);
   const asn = data.asn ? "AS" + data.asn : "ASN 未知";
   const organization = data.asOrganization || "运营商未知";
@@ -34,6 +33,7 @@ function renderWidget(family, data) {
   if (family === "accessoryInline") {
     return {
       type: "widget",
+      url: "https://ippure.com/cloudflare",
       refreshAfter: refreshDate(10),
       children: [{
         type: "text",
@@ -45,16 +45,17 @@ function renderWidget(family, data) {
   if (family === "accessoryCircular") {
     return {
       type: "widget",
+      url: "https://ippure.com/cloudflare",
       refreshAfter: refreshDate(10),
       children: [
         {
           type: "text",
-          text: purity === null ? "?" : String(purity),
+          text: hasRisk ? String(risk) : "?",
           font: { size: "title2", weight: "bold" }
         },
         {
           type: "text",
-          text: "纯净度",
+          text: "IPPure",
           font: { size: "caption2", weight: "medium" }
         }
       ]
@@ -64,11 +65,12 @@ function renderWidget(family, data) {
   if (family === "accessoryRectangular") {
     return {
       type: "widget",
+      url: "https://ippure.com/cloudflare",
       refreshAfter: refreshDate(10),
       children: [
         {
           type: "text",
-          text: shortIP(ip) + " · " + style.label,
+          text: shortIP(ip) + " · IPPure " + (hasRisk ? risk + "%" : "?"),
           font: { size: "headline", weight: "semibold" },
           maxLines: 1,
           minScale: 0.65
@@ -88,6 +90,7 @@ function renderWidget(family, data) {
 
   return {
     type: "widget",
+    url: "https://ippure.com/cloudflare",
     refreshAfter: refreshDate(10),
     padding: compact ? 14 : 16,
     gap: compact ? 7 : 9,
@@ -114,14 +117,14 @@ function renderWidget(family, data) {
           },
           {
             type: "text",
-            text: "Egern 出口",
+            text: "当前海外IP出口",
             font: { size: "headline", weight: "bold" },
             textColor: "#FFFFFF"
           },
           { type: "spacer" },
           {
             type: "text",
-            text: purity === null ? "未评分" : purity + "/100",
+            text: "IPPure " + (hasRisk ? risk + "%" : "未评分"),
             font: { size: "caption1", weight: "bold" },
             textColor: style.color
           }
@@ -164,6 +167,48 @@ function renderWidget(family, data) {
             font: { size: "caption1", weight: "semibold" },
             textColor: data.isResidential ? "#86EFAC" : "#FDE68A",
             maxLines: 1
+          }
+        ]
+      },
+      {
+        type: "stack",
+        direction: "row",
+        alignItems: "center",
+        gap: 6,
+        children: [
+          {
+            type: "text",
+            text: "IPPure 系数",
+            font: { size: "caption1", weight: "semibold" },
+            textColor: "#CBD5E1"
+          },
+          { type: "spacer" },
+          {
+            type: "text",
+            text: hasRisk ? risk + "% · " + style.label : "未返回",
+            font: { size: "caption1", weight: "bold" },
+            textColor: style.color
+          }
+        ]
+      },
+      {
+        type: "stack",
+        direction: "row",
+        alignItems: "center",
+        gap: 6,
+        children: [
+          {
+            type: "text",
+            text: "Cloudflare 系数",
+            font: { size: "caption1", weight: "semibold" },
+            textColor: "#CBD5E1"
+          },
+          { type: "spacer" },
+          {
+            type: "text",
+            text: "点按浏览器检测",
+            font: { size: "caption1", weight: "bold" },
+            textColor: "#60A5FA"
           }
         ]
       },
