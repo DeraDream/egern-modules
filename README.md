@@ -25,3 +25,11 @@ Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip.yaml)
 - 仅在出口 IPv4 发生变化时通知，并显示地区、ASN 和运营商
 - 初次运行会通知当前出口，检测失败最多每小时通知一次
 - 通知显示 5 秒，点按通知可复制出口 IP
+
+## TikTok 自动随节点选区
+
+Egern 原生模块：[`tiktok-auto-region.yaml`](./tiktok-auto-region.yaml)
+
+- TikTok 流量强制使用「🚀 节点选择」
+- 地区直接跟随代理出口 IP，不使用已失效的地区重写脚本
+- 不需要 MITM，不修改 TikTok 请求内容
