@@ -1,9 +1,14 @@
 #!name=出口 IP 检测
 #!desc=显示当前出口 IP、位置、ASN、运营商与纯净度风险估算
 #!author=Codex
+#!arguments=Proxy:DIRECT,MarkIP:false
+#!arguments-desc=Proxy: 选择要检测的策略组，默认 DIRECT。@MarkIP: 是否隐藏部分 IP（true/false）。
 
-[Script]
-出口 IP 检测 = type=generic, timeout=20, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js?v=2
+[Rule]
+DOMAIN-SUFFIX,ippure.com,{{{Proxy}}}
 
 [Panel]
-出口 IP 检测 = script-name=出口 IP 检测, update-interval=600
+出口 IP 检测 = script-name=出口 IP 检测, title=出口 IP 检测, content=刷新中…, style=info, update-interval=300
+
+[Script]
+出口 IP 检测 = type=generic, timeout=15, argument={{{MarkIP}}}, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js?v=3

@@ -1,116 +1,144 @@
-function purity(data, reputation) {
-  const organization = String(
-    data.asn_organization || data.organization || data.isp || ""
-  ).toLowerCase();
-  const hostingWords = [
-    "hosting", "cloud", "data center", "datacenter", "server",
-    "amazon", "google cloud", "microsoft azure", "digitalocean",
-    "vultr", "linode", "ovh", "hetzner"
-  ];
-  const looksHosting = hostingWords.some(function (word) {
-    return organization.indexOf(word) !== -1;
-  });
+/*
+ * Egern 出口 IP 检测
+ * 数据接口：https://my.ippure.com/v1/info
+ * 接口用法参考：Likhixang/Egerny IPPure
+ */
 
-  if (reputation === "Y") {
+const API_URL = "https://my.ippure.com/v1/info";
+const markIP = ($argument || "false").toLowerCase() === "true";
+
+$httpClient.get(API_URL, function (error, response, body) {
+  if (error) {
+    $done({
+      title: "出口 IP 检测失败",
+      content: String(error),
+      icon: "network.slash",
+      "icon-color": "#FF3B30"
+    });
+    return;
+  }
+
+  const status = response && (response.status || response.statusCode);
+  if (status && status !== 200) {
+    $done({
+      title: "出口 IP 检测失败",
+      content:
+        "HTTP 状态：" + status + "\n" +
+        "接口返回：" + String(body || "空"),
+      icon: "exclamationmark.triangle.fill",
+      "icon-color": "#FF3B30"
+    });
+    return;
+  }
+
+  try {
+    const data = JSON.parse(body);
+    const ip = data.ip || "未知";
+    const shownIP = markIP ? maskIP(ip) : ip;
+    const ipVersion = ip.indexOf(":") !== -1 ? "IPv6" : "IPv4";
+    const asn = data.asn ? "AS" + data.asn : "未知";
+    const organization = data.asOrganization || "未知";
+    const location = [
+      flagEmoji(data.countryCode),
+      data.country,
+      data.city
+    ].filter(Boolean).join(" ");
+    const residential = data.isResidential
+      ? "✅ 是（住宅/原生）"
+      : "🏢 否（机房/商业）";
+    const score = Number(data.fraudScore);
+    const risk = riskLevel(Number.isFinite(score) ? score : null);
+
+    $done({
+      title: "出口 IP · " + risk.label,
+      content:
+        ipVersion + "：" + shownIP + "\n" +
+        "ASN：" + asn + " " + organization + "\n" +
+        "位置：" + (location || "未知") + "\n" +
+        "住宅 IP：" + residential + "\n" +
+        "纯净度：" + risk.purity + "\n" +
+        "欺诈风险：" + risk.description,
+      icon: risk.icon,
+      "icon-color": risk.color,
+      "title-color": risk.color
+    });
+  } catch (parseError) {
+    $done({
+      title: "出口 IP 检测失败",
+      content:
+        "JSON 解析失败：" + parseError.message + "\n" +
+        "接口返回：" + String(body || "空").slice(0, 300),
+      icon: "exclamationmark.triangle.fill",
+      "icon-color": "#FF3B30"
+    });
+  }
+});
+
+function riskLevel(score) {
+  if (score === null) {
     return {
-      score: looksHosting ? 35 : 50,
-      grade: looksHosting ? "风险较高" : "一般",
-      color: looksHosting ? "#FF9F0A" : "#FFD60A",
-      risk: looksHosting ? "信誉库建议拦截、疑似机房线路" : "信誉库建议拦截"
+      label: "风险未知",
+      purity: "无法评分",
+      description: "接口未返回 fraudScore",
+      color: "#8E8E93",
+      icon: "questionmark.circle.fill"
     };
   }
 
-  if (reputation !== "N") {
+  const purity = Math.max(0, Math.min(100, 100 - score));
+
+  if (score >= 80) {
     return {
-      score: looksHosting ? 60 : 75,
-      grade: looksHosting ? "一般" : "待确认",
-      color: "#FFD60A",
-      risk: looksHosting ? "信誉查询不可用、疑似机房线路" : "信誉查询暂时不可用"
+      label: "极高风险",
+      purity: purity + "/100",
+      description: score + "/100（极高）",
+      color: "#FF3B30",
+      icon: "xmark.octagon.fill"
     };
   }
-
-  if (looksHosting) {
+  if (score >= 70) {
     return {
-      score: 72,
-      grade: "一般",
-      color: "#FFD60A",
-      risk: "未命中信誉风险，疑似机房线路"
+      label: "高风险",
+      purity: purity + "/100",
+      description: score + "/100（高）",
+      color: "#FF9500",
+      icon: "exclamationmark.triangle.fill"
     };
   }
-
+  if (score >= 40) {
+    return {
+      label: "中等风险",
+      purity: purity + "/100",
+      description: score + "/100（中等）",
+      color: "#FFCC00",
+      icon: "exclamationmark.circle.fill"
+    };
+  }
   return {
-    score: 92,
-    grade: "较纯净",
-    color: "#30D158",
-    risk: "未命中明显信誉风险"
+    label: "低风险",
+    purity: purity + "/100",
+    description: score + "/100（低）",
+    color: "#34C759",
+    icon: "checkmark.seal.fill"
   };
 }
 
-function finish(data, reputation) {
-  const result = purity(data, reputation);
-  const asNumber = data.asn ? "AS" + data.asn : "未知";
-  const organization =
-    data.asn_organization || data.organization || data.isp || "未知";
-  const place = [data.country, data.region, data.city]
-    .filter(Boolean)
-    .join(" · ") || "未知";
-
-  $done({
-    title: "出口 IP · " + result.grade + " " + result.score,
-    content:
-      "IP：" + (data.ip || "未知") + "\n" +
-      "位置：" + place + "\n" +
-      "ASN：" + asNumber + "\n" +
-      "运营商：" + organization + "\n" +
-      "ISP：" + (data.isp || "未知") + "\n" +
-      "风险：" + result.risk,
-    icon: "network",
-    "icon-color": result.color
-  });
+function maskIP(ip) {
+  if (!ip) return "";
+  if (ip.indexOf(".") !== -1) {
+    const parts = ip.split(".");
+    return parts[0] + "." + parts[1] + ".*.*";
+  }
+  const parts = ip.split(":");
+  return (parts[0] || "") + ":" + (parts[1] || "") + ":*:*:*:*:*:*";
 }
 
-$httpClient.get(
-  {
-    url: "https://api.ip.sb/geoip",
-    headers: { Accept: "application/json" },
-    timeout: 12
-  },
-  function (error, response, body) {
-    if (error) {
-      $done({
-        title: "出口 IP 检测失败",
-        content: String(error),
-        icon: "exclamationmark.triangle",
-        "icon-color": "#FF453A"
-      });
-      return;
-    }
-
-    try {
-      const data = JSON.parse(body);
-      if (!data.ip) throw new Error("接口没有返回 IP");
-
-      $httpClient.get(
-        {
-          url: "https://blackbox.ipinfo.app/api/v1/" + encodeURIComponent(data.ip),
-          headers: { Accept: "text/plain" },
-          timeout: 12
-        },
-        function (riskError, riskResponse, riskBody) {
-          if (riskError) {
-            finish(data, "E");
-            return;
-          }
-          finish(data, String(riskBody || "E").trim().toUpperCase());
-        }
-      );
-    } catch (parseError) {
-      $done({
-        title: "出口 IP 检测失败",
-        content: "接口返回解析失败：" + parseError.message,
-        icon: "exclamationmark.triangle",
-        "icon-color": "#FF453A"
-      });
-    }
-  }
-);
+function flagEmoji(code) {
+  if (!code || code.length !== 2) return "";
+  return String.fromCodePoint.apply(
+    String,
+    code.toUpperCase().split("").map(function (character) {
+      return 127397 + character.charCodeAt(0);
+    })
+  );
+}
