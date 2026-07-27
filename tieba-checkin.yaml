@@ -19,6 +19,12 @@ scriptings:
       timeout: 300
       update_interval: 86400
 
+  - generic:
+      name: "贴吧立即签到"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js?v=4"
+      timeout: 300
+      update_interval: 86400
+
 mitm:
   hostnames:
     includes:

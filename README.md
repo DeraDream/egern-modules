@@ -14,6 +14,7 @@ Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
 
 - 打开贴吧 App 时自动保存 Cookie
 - 每天 00:01 签到关注的贴吧
+- 可在 Egern 脚本工具中手动运行「贴吧立即签到」
 - 支持多账号和失败重试
 - 使用 Egern 原生 `ctx.notify()` 通知签到结果
 
