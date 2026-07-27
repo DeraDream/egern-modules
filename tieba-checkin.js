@@ -232,7 +232,12 @@ async function runCheckIn(ctx) {
       sound: true,
       duration: 5,
     });
-    return;
+    return {
+      total: 0,
+      success: 0,
+      failed: 0,
+      message: "没有 Cookie，请先打开贴吧 App",
+    };
   }
 
   const reports = [];
@@ -272,12 +277,68 @@ async function runCheckIn(ctx) {
       url: "https://tieba.baidu.com/",
     },
   });
+
+  return {
+    total,
+    success,
+    failed: failures.length,
+    message: failures.length ? failures[0] : "全部签到完成",
+  };
+}
+
+function renderCheckInWidget(result) {
+  const ok = result.failed === 0 && result.total > 0;
+  return {
+    type: "widget",
+    url: "https://tieba.baidu.com/",
+    refreshAfter: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    padding: 16,
+    gap: 9,
+    backgroundGradient: {
+      type: "linear",
+      colors: ["#0B5FFF", "#123A8C"],
+      stops: [0, 1],
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 1, y: 1 },
+    },
+    children: [
+      {
+        type: "text",
+        text: ok ? "✅ 贴吧签到完成" : "⚠️ 贴吧签到结果",
+        font: { size: "headline", weight: "bold" },
+        textColor: "#FFFFFF",
+      },
+      {
+        type: "text",
+        text: `成功/已签 ${result.success}/${result.total}`,
+        font: { size: "title3", weight: "semibold" },
+        textColor: "#FFFFFF",
+      },
+      {
+        type: "text",
+        text: result.message,
+        font: { size: "caption1" },
+        textColor: "#DCE8FF",
+        maxLines: 2,
+      },
+      { type: "spacer" },
+      {
+        type: "text",
+        text: "刷新小组件可再次签到",
+        font: { size: "caption2" },
+        textColor: "#BBD2FF",
+      },
+    ],
+  };
 }
 
 export default async function (ctx) {
   try {
     if (ctx.request?.url) await captureCookie(ctx);
-    else await runCheckIn(ctx);
+    else {
+      const result = await runCheckIn(ctx);
+      if (ctx.widgetFamily) return renderCheckInWidget(result);
+    }
   } catch (error) {
     console.log(`贴吧脚本异常：${error.stack || error.message || error}`);
     ctx.notify({
@@ -286,5 +347,13 @@ export default async function (ctx) {
       sound: true,
       duration: 5,
     });
+    if (ctx.widgetFamily) {
+      return renderCheckInWidget({
+        total: 0,
+        success: 0,
+        failed: 1,
+        message: error.message || String(error),
+      });
+    }
   }
 }
