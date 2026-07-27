@@ -3,8 +3,7 @@
 #!author=Codex
 
 [Script]
-出口 IP 检测 = type=generic, timeout=20, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js
+出口 IP 检测 = type=generic, timeout=20, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js?v=2
 
 [Panel]
 出口 IP 检测 = script-name=出口 IP 检测, update-interval=600
-
