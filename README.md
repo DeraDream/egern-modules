@@ -16,3 +16,12 @@ Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
 - 每天 00:01 签到关注的贴吧
 - 支持多账号和失败重试
 - 使用 Egern 原生 `ctx.notify()` 通知签到结果
+
+## 网络切换出口 IP 通知
+
+Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip.yaml)
+
+- Wi-Fi、蜂窝网络或 VPN 状态变化时自动运行
+- 强制查询代理后的 IPv4 出口，并显示地区、ASN 和运营商
+- 20 秒内相同出口 IP 的重复网络事件只通知一次
+- 通知显示 5 秒，点按通知可复制出口 IP
