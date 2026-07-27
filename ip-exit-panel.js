@@ -1,56 +1,59 @@
-function purity(data) {
-  let score = 100;
-  const risks = [];
-
-  function deduct(condition, points, name) {
-    if (condition) {
-      score -= points;
-      risks.push(name);
-    }
-  }
-
-  deduct(data.is_tor, 65, "Tor");
-  deduct(data.is_proxy, 40, "代理");
-  deduct(data.is_vpn, 30, "VPN");
-  deduct(data.is_abuser, 35, "滥用记录");
-  deduct(data.is_datacenter, 25, "机房 IP");
-  deduct(data.is_bogon, 80, "Bogon");
-  deduct(data.is_crawler, 20, "爬虫");
-
-  const asnType = String(
-    (data.asn && data.asn.type) ||
-    (data.company && data.company.type) ||
-    ""
+function purity(data, reputation) {
+  const organization = String(
+    data.asn_organization || data.organization || data.isp || ""
   ).toLowerCase();
+  const hostingWords = [
+    "hosting", "cloud", "data center", "datacenter", "server",
+    "amazon", "google cloud", "microsoft azure", "digitalocean",
+    "vultr", "linode", "ovh", "hetzner"
+  ];
+  const looksHosting = hostingWords.some(function (word) {
+    return organization.indexOf(word) !== -1;
+  });
 
-  if (asnType === "hosting" && !data.is_datacenter) {
-    score -= 15;
-    risks.push("托管 ASN");
+  if (reputation === "Y") {
+    return {
+      score: looksHosting ? 35 : 50,
+      grade: looksHosting ? "风险较高" : "一般",
+      color: looksHosting ? "#FF9F0A" : "#FFD60A",
+      risk: looksHosting ? "信誉库建议拦截、疑似机房线路" : "信誉库建议拦截"
+    };
   }
 
-  score = Math.max(0, Math.min(100, score));
+  if (reputation !== "N") {
+    return {
+      score: looksHosting ? 60 : 75,
+      grade: looksHosting ? "一般" : "待确认",
+      color: "#FFD60A",
+      risk: looksHosting ? "信誉查询不可用、疑似机房线路" : "信誉查询暂时不可用"
+    };
+  }
 
-  if (score >= 90) return { score, grade: "很纯净", color: "#30D158", risks };
-  if (score >= 75) return { score, grade: "较纯净", color: "#A4D65E", risks };
-  if (score >= 55) return { score, grade: "一般", color: "#FFD60A", risks };
-  if (score >= 30) return { score, grade: "风险较高", color: "#FF9F0A", risks };
-  return { score, grade: "高风险", color: "#FF453A", risks };
+  if (looksHosting) {
+    return {
+      score: 72,
+      grade: "一般",
+      color: "#FFD60A",
+      risk: "未命中信誉风险，疑似机房线路"
+    };
+  }
+
+  return {
+    score: 92,
+    grade: "较纯净",
+    color: "#30D158",
+    risk: "未命中明显信誉风险"
+  };
 }
 
-function finish(data) {
-  const result = purity(data);
-  const asn = data.asn || {};
-  const company = data.company || {};
-  const location = data.location || {};
-  const asNumber = asn.asn ? "AS" + asn.asn : "未知";
-  const organization = asn.org || company.name || asn.descr || "未知";
-  const asnType = asn.type || company.type || "未知";
-  const place = [location.country, location.state, location.city]
+function finish(data, reputation) {
+  const result = purity(data, reputation);
+  const asNumber = data.asn ? "AS" + data.asn : "未知";
+  const organization =
+    data.asn_organization || data.organization || data.isp || "未知";
+  const place = [data.country, data.region, data.city]
     .filter(Boolean)
     .join(" · ") || "未知";
-  const riskText = result.risks.length
-    ? result.risks.join("、")
-    : "未发现明显风险信号";
 
   $done({
     title: "出口 IP · " + result.grade + " " + result.score,
@@ -59,9 +62,8 @@ function finish(data) {
       "位置：" + place + "\n" +
       "ASN：" + asNumber + "\n" +
       "运营商：" + organization + "\n" +
-      "线路：" + asnType + "\n" +
-      "网段：" + (asn.route || "未知") + "\n" +
-      "风险：" + riskText,
+      "ISP：" + (data.isp || "未知") + "\n" +
+      "风险：" + result.risk,
     icon: "network",
     "icon-color": result.color
   });
@@ -69,7 +71,7 @@ function finish(data) {
 
 $httpClient.get(
   {
-    url: "https://api.ipapi.is",
+    url: "https://api.ip.sb/geoip",
     headers: { Accept: "application/json" },
     timeout: 12
   },
@@ -86,8 +88,22 @@ $httpClient.get(
 
     try {
       const data = JSON.parse(body);
-      if (data.error) throw new Error(data.error);
-      finish(data);
+      if (!data.ip) throw new Error("接口没有返回 IP");
+
+      $httpClient.get(
+        {
+          url: "https://blackbox.ipinfo.app/api/v1/" + encodeURIComponent(data.ip),
+          headers: { Accept: "text/plain" },
+          timeout: 12
+        },
+        function (riskError, riskResponse, riskBody) {
+          if (riskError) {
+            finish(data, "E");
+            return;
+          }
+          finish(data, String(riskBody || "E").trim().toUpperCase());
+        }
+      );
     } catch (parseError) {
       $done({
         title: "出口 IP 检测失败",
