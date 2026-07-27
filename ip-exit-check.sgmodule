@@ -1,0 +1,10 @@
+#!name=出口 IP 检测
+#!desc=显示当前出口 IP、位置、ASN、运营商与纯净度风险估算
+#!author=Codex
+
+[Script]
+出口 IP 检测 = type=generic, timeout=20, script-path=https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-panel.js
+
+[Panel]
+出口 IP 检测 = script-name=出口 IP 检测, update-interval=600
+
