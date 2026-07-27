@@ -91,7 +91,7 @@ async function captureCookie(ctx) {
       subtitle: `账号 ${userId}`,
       body: "🎈 获取 Cookie 成功",
       sound: true,
-      duration: 8,
+      duration: 5,
     });
   } else {
     console.log(`账号 ${userId} 的 Cookie 已静默更新`);
@@ -230,7 +230,7 @@ async function runCheckIn(ctx) {
       title: "百度贴吧签到失败",
       body: "没有 Cookie，请先打开贴吧 App 获取登录信息",
       sound: true,
-      duration: 8,
+      duration: 5,
     });
     return;
   }
@@ -266,7 +266,7 @@ async function runCheckIn(ctx) {
     title: failures.length ? "⚠️ 贴吧签到部分失败" : "✅ 贴吧签到完成",
     body: body.join("\n"),
     sound: true,
-    duration: 10,
+    duration: 5,
     action: {
       type: "openUrl",
       url: "https://tieba.baidu.com/",
@@ -284,7 +284,7 @@ export default async function (ctx) {
       title: "❌ 贴吧脚本异常",
       body: error.message || String(error),
       sound: true,
-      duration: 8,
+      duration: 5,
     });
   }
 }

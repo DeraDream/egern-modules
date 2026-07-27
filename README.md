@@ -13,6 +13,6 @@ Egern 当前订阅使用的 `Profile.yaml` 顶层。该文件是配置片段，�
 Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
 
 - 打开贴吧 App 时自动保存 Cookie
-- 每天 09:30 签到关注的贴吧
+- 每天 00:01 签到关注的贴吧
 - 支持多账号和失败重试
 - 使用 Egern 原生 `ctx.notify()` 通知签到结果
