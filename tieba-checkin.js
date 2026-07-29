@@ -277,12 +277,10 @@ async function runCheckIn(ctx) {
     title: failures.length ? "⚠️ 贴吧签到部分失败" : "✅ 贴吧签到完成",
     body: body.join("\n"),
     sound: true,
-    duration: 5,
-    action: {
-      type: "openUrl",
-      url: "https://tieba.baidu.com/",
-    },
   });
+  // 定时签到可能运行数分钟。给 Egern 留出时间把本地通知提交给
+  // iOS，避免脚本一结束通知只写入历史记录而没有显示系统横幅。
+  await sleep(1000);
 
   const result = {
     day: currentDay(),
