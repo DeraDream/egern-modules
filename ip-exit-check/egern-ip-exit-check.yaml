@@ -6,7 +6,7 @@ icon: "network"
 scriptings:
   - generic:
       name: "ip-exit-check"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-check.js"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-exit-check/ip-exit-check.js"
       timeout: 20
       update_interval: 86400
 

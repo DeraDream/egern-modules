@@ -23,7 +23,7 @@ modules:
     update_interval: 86400
 
   - name: "当前海外 IP 出口"
-    url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-pure-widget.yaml"
+    url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/ip-pure-widget/ip-pure-widget.yaml"
     enabled: true
     update_interval: 3600
 

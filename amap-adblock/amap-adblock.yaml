@@ -20,14 +20,14 @@ scriptings:
   - http_request:
       name: "高德广告接口拦截"
       match: "^https?://(?:amap-aos-info-nogw|ai|m5|m5-zb|oss|sns)\\.amap\\.com/"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/amap-adblock.js?v=1"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/amap-adblock/amap-adblock.js?v=1"
       timeout: 10
       update_interval: 86400
 
   - http_response:
       name: "高德广告内容清理"
       match: "^https://(?:info|m5|m5-zb)\\.amap\\.com/(?:v1/ai_rec/|ws/)"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/amap-adblock.js?v=1"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/amap-adblock/amap-adblock.js?v=1"
       body_required: true
       max_size: 5242880
       timeout: 10

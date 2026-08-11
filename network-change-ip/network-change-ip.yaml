@@ -8,7 +8,7 @@ scriptings:
   - schedule:
       name: "海外代理出口检测"
       cron: "*/10 * * * * *"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/network-change-ip.js?v=2"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/network-change-ip/network-change-ip.js?v=2"
       env:
         POLICY: "🚀 节点选择"
       timeout: 30

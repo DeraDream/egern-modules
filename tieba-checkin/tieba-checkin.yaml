@@ -8,27 +8,27 @@ scriptings:
   - http_request:
       name: "贴吧 Cookie 获取"
       match: "^https?://tiebac\\.baidu\\.com/c/u/follow/getFoldedMessageUserInfo"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js?v=8"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin/tieba-checkin.js?v=8"
       timeout: 30
       update_interval: 86400
 
   - http_request:
       name: "贴吧手动签到触发"
       match: "^http://tieba-checkin\\.local/run$"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js?v=8"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin/tieba-checkin.js?v=8"
       timeout: 300
       update_interval: 86400
 
   - schedule:
       name: "贴吧每日签到"
       cron: "1 0 * * *"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js?v=8"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin/tieba-checkin.js?v=8"
       timeout: 300
       update_interval: 86400
 
   - generic:
       name: "tieba-checkin-status"
-      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin.js?v=8"
+      script_url: "https://raw.githubusercontent.com/DeraDream/egern-modules/main/tieba-checkin/tieba-checkin.js?v=8"
       timeout: 30
       update_interval: 86400
 

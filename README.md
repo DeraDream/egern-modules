@@ -2,7 +2,7 @@
 
 ## 高德地图去广告
 
-Egern 原生模块：[`amap-adblock.yaml`](./amap-adblock.yaml)
+Egern 原生模块：[`amap-adblock.yaml`](./amap-adblock/amap-adblock.yaml)
 
 - 清理开屏、首页、搜索、路线规划、导航结束、附近和打车页面推广
 - 使用 Egern 原生 YAML 和 `export default(ctx)` 脚本
@@ -19,7 +19,7 @@ Egern 当前订阅使用的 `Profile.yaml` 顶层。该文件是配置片段，�
 
 ## 百度贴吧自动签到
 
-Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
+Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin/tieba-checkin.yaml)
 
 - 打开贴吧 App 时自动保存 Cookie
 - 每天 00:01 签到关注的贴吧
@@ -30,7 +30,7 @@ Egern 原生模块：[`tieba-checkin.yaml`](./tieba-checkin.yaml)
 
 ## 海外代理出口切换通知
 
-Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip.yaml)
+Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip/network-change-ip.yaml)
 
 - 每 10 秒通过「🚀 节点选择」策略检测代理出口
 - 仅在出口 IPv4 发生变化时通知，并显示地区、ASN 和运营商
@@ -39,7 +39,7 @@ Egern 原生模块：[`network-change-ip.yaml`](./network-change-ip.yaml)
 
 ## TikTok 自动随节点选区
 
-Egern 原生模块：[`tiktok-auto-region.yaml`](./tiktok-auto-region.yaml)
+Egern 原生模块：[`tiktok-auto-region.yaml`](./tiktok-auto-region/tiktok-auto-region.yaml)
 
 - TikTok 流量强制使用「🎵 TikTok」策略组当前选中的节点
 - 地区直接跟随代理出口 IP，不使用已失效的地区重写脚本
