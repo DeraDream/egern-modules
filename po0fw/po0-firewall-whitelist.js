@@ -180,6 +180,7 @@ function sameC24(a, b) {
 }
 
 async function ensure(ctx, item, index, cellular) {
+  const kvState = STORE_PREFIX + index;
   const kvHist = STORE_PREFIX + "hist_" + index;
   const st = await apiCall(ctx, item.token, item.slot);
   if (st.applied) {
@@ -190,7 +191,7 @@ async function ensure(ctx, item, index, cellular) {
       ctx.storage.setJSON(kvHist, hist.slice(-10));
     }
   }
-  return { kvHist: kvHist, slot: item.slot, st: st };
+  return { kvState: kvState, kvHist: kvHist, slot: item.slot, st: st };
 }
 
 // 每 token 一行：不含 token，只含白名单/坑位信息；钉住的槽位标 📌，蜂窝加的 IP 标 📶
@@ -239,6 +240,7 @@ export default async function (ctx) {
 
   let okCount = 0;
   let exitIp = "?";
+  let changed = false;
   const lines = [];
   for (let i = 0; i < results.length; i++) {
     const st = results[i].st;
@@ -246,9 +248,19 @@ export default async function (ctx) {
     if (st.currentIp) exitIp = st.currentIp;
     lines.push(describe(ctx, i, results[i]));
 
+    const state = st.error
+      ? "error|" + st.error
+      : (st.currentIp || "?") + "|" + (st.applied ? "1" : "0");
+    if (ctx.storage.get(results[i].kvState) !== state) {
+      ctx.storage.set(results[i].kvState, state);
+      changed = true;
+    }
+
   }
 
   const title =
-    "po0 已执行 · 加白 " + okCount + "/" + results.length + " · 出口 " + exitIp + (cellular ? " 📶" : "");
-  ctx.notify({ title: "po0 防火墙加白", subtitle: title, body: lines.join("\n") });
+    "po0 加白 " + okCount + "/" + results.length + " · 出口 " + exitIp + (cellular ? " 📶" : "");
+  if (changed) {
+    ctx.notify({ title: "po0 防火墙加白", subtitle: title, body: lines.join("\n") });
+  }
 }
