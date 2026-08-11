@@ -6,14 +6,14 @@
  * 因此 Egern 不复用共享脚本 scripts/po0-firewall-whitelist.js，而是本独立文件。
  * 两者业务逻辑保持一致——改动加白/槽位/通知策略时请同步修改两份。
  *
- * 行为：GET https://console.po0.io/modules/servers/penguin/api/firewall.php?action=add&token=<token>，把本机当前
+ * 行为：POST https://124.221.69.228/api/firewall/<token>/add[?slot=N]，把本机当前
  *   出口 IP 加白。token 走 URL 路径；服务端对已在白名单的 IP 幂等；写满 5 个后按
  *   写入时间 FIFO 淘汰（带 slot 的行永不淘汰）。token 来自模块参数 tokens。
  * 加白粒度为 C 段（/24）：服务端把 whitelist 条目和 currentIp 归一化成
  *   x.x.x.0/24 回显，同段换 IP 不产生新写入；匹配用 sameC24() 兼容混杂格式。
  */
 
-const API_BASE = "https://console.po0.io/modules/servers/penguin/api/firewall.php";
+const API_BASE = "https://124.221.69.228/api/firewall/";
 const STORE_PREFIX = "po0_fw_";
 const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口
 
@@ -25,7 +25,7 @@ function parseTokens(raw) {
       return s.trim();
     })
     .filter(function (s) {
-      return s.length > 0;
+      return s.indexOf("pgnfw_") === 0;
     })
     .map(function (s) {
       const at = s.indexOf("@");
@@ -89,13 +89,13 @@ function isRetryableServerError(status, text) {
 // "HTTP error! status: 403, body: ..."），不会把 resp 交回来。
 // 必须从 error message 里把 status/body 解析出来，走统一处理，
 // 否则 403 槽位冲突分支永远走不到，只会弹裸的 HTTP error。
-async function httpGetOnce(ctx, url) {
+async function httpPostOnce(ctx, url) {
   let text = "";
   let status = 0;
   try {
-    const resp = await ctx.http.get(url, {
-      headers: { Accept: "application/json" },
-      policy: "DIRECT",
+    const resp = await ctx.http.post(url, {
+      headers: { "Content-Type": "application/json" },
+      body: "",
       timeout: 15000,
     });
     status = resp.status;
@@ -117,10 +117,13 @@ async function httpGetOnce(ctx, url) {
 }
 
 async function apiCall(ctx, token, slot) {
-  const url = API_BASE + "?action=add&token=" + encodeURIComponent(token);
+  let url = API_BASE + encodeURIComponent(token) + "/add";
+  if (slot !== null && slot !== undefined && slot !== "") {
+    url += "?slot=" + encodeURIComponent(slot);
+  }
   let r = null;
   for (let attempt = 1; attempt <= HTTP_RETRY; attempt++) {
-    r = await httpGetOnce(ctx, url);
+    r = await httpPostOnce(ctx, url);
     if (!r.netError && !isRetryableServerError(r.status, r.text)) break;
     if (attempt < HTTP_RETRY) await sleep(HTTP_RETRY_DELAY_MS * attempt);
   }
@@ -180,7 +183,6 @@ function sameC24(a, b) {
 }
 
 async function ensure(ctx, item, index, cellular) {
-  const kvState = STORE_PREFIX + index;
   const kvHist = STORE_PREFIX + "hist_" + index;
   const st = await apiCall(ctx, item.token, item.slot);
   if (st.applied) {
@@ -191,7 +193,7 @@ async function ensure(ctx, item, index, cellular) {
       ctx.storage.setJSON(kvHist, hist.slice(-10));
     }
   }
-  return { kvState: kvState, kvHist: kvHist, slot: item.slot, st: st };
+  return { kvHist: kvHist, slot: item.slot, st: st };
 }
 
 // 每 token 一行：不含 token，只含白名单/坑位信息；钉住的槽位标 📌，蜂窝加的 IP 标 📶
@@ -240,27 +242,15 @@ export default async function (ctx) {
 
   let okCount = 0;
   let exitIp = "?";
-  let changed = false;
   const lines = [];
   for (let i = 0; i < results.length; i++) {
     const st = results[i].st;
     if (st.applied) okCount++;
     if (st.currentIp) exitIp = st.currentIp;
     lines.push(describe(ctx, i, results[i]));
-
-    const state = st.error
-      ? "error|" + st.error
-      : (st.currentIp || "?") + "|" + (st.applied ? "1" : "0");
-    if (ctx.storage.get(results[i].kvState) !== state) {
-      ctx.storage.set(results[i].kvState, state);
-      changed = true;
-    }
-
   }
 
   const title =
     "po0 加白 " + okCount + "/" + results.length + " · 出口 " + exitIp + (cellular ? " 📶" : "");
-  if (changed) {
-    ctx.notify({ title: "po0 防火墙加白", subtitle: title, body: lines.join("\n") });
-  }
+  ctx.notify({ title: "po0 已执行 · 防火墙加白", subtitle: title, body: lines.join("\n") });
 }
