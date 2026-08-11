@@ -6,15 +6,14 @@
  * 因此 Egern 不复用共享脚本 scripts/po0-firewall-whitelist.js，而是本独立文件。
  * 两者业务逻辑保持一致——改动加白/槽位/通知策略时请同步修改两份。
  *
- * 行为：POST https://124.221.69.228/api/firewall/<token>/add[?slot=N]，把本机当前
+ * 行为：GET https://console.po0.io/modules/servers/penguin/api/firewall.php?action=add&token=<token>，把本机当前
  *   出口 IP 加白。token 走 URL 路径；服务端对已在白名单的 IP 幂等；写满 5 个后按
- *   写入时间 FIFO 淘汰（带 slot 的行永不淘汰）。token 来自模块参数 tokens
- *   （ctx.env.tokens），可带 @槽位 后缀（pgnfw_xxx@0）钉固定坑位。
+ *   写入时间 FIFO 淘汰（带 slot 的行永不淘汰）。token 来自模块参数 tokens。
  * 加白粒度为 C 段（/24）：服务端把 whitelist 条目和 currentIp 归一化成
  *   x.x.x.0/24 回显，同段换 IP 不产生新写入；匹配用 sameC24() 兼容混杂格式。
  */
 
-const API_BASE = "https://124.221.69.228/api/firewall/"; // + <token> + "/add"
+const API_BASE = "https://console.po0.io/modules/servers/penguin/api/firewall.php";
 const STORE_PREFIX = "po0_fw_";
 const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口
 
@@ -26,7 +25,7 @@ function parseTokens(raw) {
       return s.trim();
     })
     .filter(function (s) {
-      return s.indexOf("pgnfw_") === 0;
+      return s.length > 0;
     })
     .map(function (s) {
       const at = s.indexOf("@");
@@ -90,13 +89,13 @@ function isRetryableServerError(status, text) {
 // "HTTP error! status: 403, body: ..."），不会把 resp 交回来。
 // 必须从 error message 里把 status/body 解析出来，走统一处理，
 // 否则 403 槽位冲突分支永远走不到，只会弹裸的 HTTP error。
-async function httpPostOnce(ctx, url) {
+async function httpGetOnce(ctx, url) {
   let text = "";
   let status = 0;
   try {
-    const resp = await ctx.http.post(url, {
-      headers: { "Content-Type": "application/json" },
-      body: "",
+    const resp = await ctx.http.get(url, {
+      headers: { Accept: "application/json" },
+      policy: "DIRECT",
       timeout: 15000,
     });
     status = resp.status;
@@ -118,13 +117,10 @@ async function httpPostOnce(ctx, url) {
 }
 
 async function apiCall(ctx, token, slot) {
-  let url = API_BASE + encodeURIComponent(token) + "/add";
-  if (slot !== null && slot !== undefined && slot !== "") {
-    url += "?slot=" + encodeURIComponent(slot);
-  }
+  const url = API_BASE + "?action=add&token=" + encodeURIComponent(token);
   let r = null;
   for (let attempt = 1; attempt <= HTTP_RETRY; attempt++) {
-    r = await httpPostOnce(ctx, url);
+    r = await httpGetOnce(ctx, url);
     if (!r.netError && !isRetryableServerError(r.status, r.text)) break;
     if (attempt < HTTP_RETRY) await sleep(HTTP_RETRY_DELAY_MS * attempt);
   }
@@ -227,7 +223,7 @@ export default async function (ctx) {
     ctx.notify({
       title: "po0 防火墙加白",
       subtitle: "未配置 token",
-      body: "模块参数 tokens 填入 pgnfw_ token，多个用英文逗号分割",
+      body: "模块参数 tokens 填入添加网段链接中的 token，多个用英文逗号分割",
     });
     return;
   }
