@@ -17,14 +17,14 @@ scriptings:
   - schedule:
       name: po0-fw-cron
       cron: "*/10 * * * *"
-      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/po0-firewall-whitelist.js?v=3
+      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/po0-firewall-whitelist.js?v=4
       timeout: 60
       env:
         tokens: "{{{tokens}}}"
         initial_delay_ms: "0"
   - network:
       name: po0-fw-network
-      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/po0-firewall-whitelist.js?v=3
+      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/po0-firewall-whitelist.js?v=4
       timeout: 60
       env:
         tokens: "{{{tokens}}}"
