@@ -8,12 +8,13 @@
  *
  * 行为：POST https://124.221.69.228/api/firewall/<token>/add[?slot=N]，把本机当前
  *   出口 IP 加白。token 走 URL 路径；服务端对已在白名单的 IP 幂等；写满 5 个后按
- *   写入时间 FIFO 淘汰（带 slot 的行永不淘汰）。token 来自模块参数 tokens。
+ *   写入时间 FIFO 淘汰（带 slot 的行永不淘汰）。token 来自模块参数 tokens
+ *   （ctx.env.tokens），可带 @槽位 后缀（pgnfw_xxx@0）钉固定坑位。
  * 加白粒度为 C 段（/24）：服务端把 whitelist 条目和 currentIp 归一化成
  *   x.x.x.0/24 回显，同段换 IP 不产生新写入；匹配用 sameC24() 兼容混杂格式。
  */
 
-const API_BASE = "https://124.221.69.228/api/firewall/";
+const API_BASE = "https://124.221.69.228/api/firewall/"; // + <token> + "/add"
 const STORE_PREFIX = "po0_fw_";
 const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口
 
@@ -183,6 +184,7 @@ function sameC24(a, b) {
 }
 
 async function ensure(ctx, item, index, cellular) {
+  const kvState = STORE_PREFIX + index;
   const kvHist = STORE_PREFIX + "hist_" + index;
   const st = await apiCall(ctx, item.token, item.slot);
   if (st.applied) {
@@ -193,7 +195,7 @@ async function ensure(ctx, item, index, cellular) {
       ctx.storage.setJSON(kvHist, hist.slice(-10));
     }
   }
-  return { kvHist: kvHist, slot: item.slot, st: st };
+  return { kvState: kvState, kvHist: kvHist, slot: item.slot, st: st };
 }
 
 // 每 token 一行：不含 token，只含白名单/坑位信息；钉住的槽位标 📌，蜂窝加的 IP 标 📶
@@ -226,13 +228,10 @@ export default async function (ctx) {
     ctx.notify({
       title: "po0 防火墙加白",
       subtitle: "未配置 token",
-      body: "模块参数 tokens 填入添加网段链接中的 token，多个用英文逗号分割",
+      body: "模块参数 tokens 填入 pgnfw_ token，多个用英文逗号分割",
     });
     return;
   }
-
-  const initialDelayMs = parseInt(ctx.env && ctx.env.initial_delay_ms, 10) || 0;
-  if (initialDelayMs > 0) await sleep(initialDelayMs);
 
   const cellular = onCellular(ctx);
   const results = [];
@@ -242,15 +241,25 @@ export default async function (ctx) {
 
   let okCount = 0;
   let exitIp = "?";
+  let changed = false;
   const lines = [];
   for (let i = 0; i < results.length; i++) {
     const st = results[i].st;
     if (st.applied) okCount++;
     if (st.currentIp) exitIp = st.currentIp;
     lines.push(describe(ctx, i, results[i]));
+
+    const state = (st.currentIp || "?") + "|" + (st.applied ? "1" : "0");
+    if (ctx.storage.get(results[i].kvState) !== state) {
+      ctx.storage.set(results[i].kvState, state);
+      changed = true;
+    }
   }
 
   const title =
     "po0 加白 " + okCount + "/" + results.length + " · 出口 " + exitIp + (cellular ? " 📶" : "");
-  ctx.notify({ title: "po0 已执行 · 防火墙加白", subtitle: title, body: lines.join("\n") });
+  // 仅在出口 IP 或加白状态较上次变化时通知，例行 cron 保持安静
+  if (changed) {
+    ctx.notify({ title: "po0 防火墙加白", subtitle: title, body: lines.join("\n") });
+  }
 }
