@@ -83,7 +83,7 @@ function renderWidget(family, results) {
         direction: "row",
         gap: 6,
         children: [
-          text(String(entry.ip) + active, { font: { size: "caption1", family: "Menlo" }, flex: 1, minScale: 0.65 }),
+          text(String(entry.ip) + active, { font: { size: "caption1", family: "Menlo" }, textColor: "#E5EDF5", flex: 1, minScale: 0.65 }),
           text(slot, { textColor: "#7B8494", font: { size: "caption2" } }),
         ],
       });
@@ -91,6 +91,7 @@ function renderWidget(family, results) {
   });
 
   const compact = family === "accessoryRectangular" || family === "accessoryInline" || family === "accessoryCircular";
+  const shortRows = rows.slice(0, 3);
   if (compact) {
     return {
       type: "widget",
@@ -99,6 +100,40 @@ function renderWidget(family, results) {
       children: [
         text("po0 防火墙", { font: { size: "headline", weight: "bold" } }),
         text(current + " · " + ok + "/" + results.length + " 已加白", { font: { size: "caption1" }, maxLines: 2 }),
+      ],
+    };
+  }
+
+  if (family === "systemSmall") {
+    return {
+      type: "widget",
+      refreshAfter: new Date(Date.now() + 300000).toISOString(),
+      padding: 12,
+      backgroundColor: "#102A43",
+      children: [
+        text("🛡 po0", { font: { size: "headline", weight: "bold" }, textColor: "#FFFFFF" }),
+        { type: "spacer", length: 6 },
+        text(current, { font: { size: "caption1", family: "Menlo" }, textColor: "#D9E2EC", minScale: 0.6, maxLines: 1 }),
+        text(ok + "/" + results.length + " 已加白", { font: { size: "subheadline", weight: "semibold" }, textColor: ok === results.length ? "#62D6A7" : "#FFCC66" }),
+      ],
+    };
+  }
+
+  if (family === "systemMedium") {
+    return {
+      type: "widget",
+      refreshAfter: new Date(Date.now() + 300000).toISOString(),
+      padding: 12,
+      gap: 5,
+      backgroundColor: "#102A43",
+      children: [
+        { type: "stack", direction: "row", alignItems: "center", children: [
+          text("🛡 po0 防火墙", { font: { size: "headline", weight: "bold" }, textColor: "#FFFFFF", flex: 1 }),
+          text(ok + "/" + results.length + " 已加白", { font: { size: "caption1", weight: "semibold" }, textColor: ok === results.length ? "#62D6A7" : "#FFCC66" }),
+        ] },
+        text("出口：" + current, { font: { size: "caption1", family: "Menlo" }, textColor: "#D9E2EC", minScale: 0.6, maxLines: 1 }),
+        { type: "stack", direction: "column", gap: 2, children: shortRows.length ? shortRows : [text("暂无白名单数据", { font: { size: "caption1" }, textColor: "#CBD5E1" })] },
+        { type: "stack", direction: "row", gap: 6, children: [button("立即加白", "#1677C8"), button("获取状态", "#536273")] },
       ],
     };
   }
