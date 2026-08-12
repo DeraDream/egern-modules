@@ -16,6 +16,12 @@ rules:
       no_resolve: true
 
 scriptings:
+  - generic:
+      name: po0-fw-widget
+      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/po0-firewall-widget.js
+      timeout: 30
+      env:
+        tokens: "{{{tokens}}}"
   - schedule:
       name: po0-fw-cron
       cron: "*/10 * * * *"
@@ -29,3 +35,7 @@ scriptings:
       timeout: 60
       env:
         tokens: "{{{tokens}}}"
+
+widgets:
+  - name: po0 防火墙状态
+    script_name: po0-fw-widget
