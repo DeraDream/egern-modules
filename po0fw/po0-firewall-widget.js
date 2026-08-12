@@ -53,19 +53,6 @@ function text(value, options = {}) {
   return { type: "text", text: String(value), ...options };
 }
 
-function button(label, color) {
-  return {
-    type: "stack",
-    direction: "row",
-    alignItems: "center",
-    flex: 1,
-    padding: [8, 6],
-    borderRadius: 10,
-    backgroundColor: color,
-    children: [text(label, { textAlign: "center", textColor: "#FFFFFF", font: { size: "caption1", weight: "semibold" }, flex: 1 })],
-  };
-}
-
 function renderWidget(family, results) {
   const ok = results.filter((result) => result.applied).length;
   const current = results.find((result) => result.current !== "?")?.current || "?";
@@ -99,7 +86,7 @@ function renderWidget(family, results) {
       padding: 12,
       children: [
         text("po0 防火墙", { font: { size: "headline", weight: "bold" } }),
-        text(current + " · " + ok + "/" + results.length + " 已加白", { font: { size: "caption1" }, maxLines: 2 }),
+        text("当前：" + current + " · " + (ok === results.length ? "已加入白名单" : "未加入白名单"), { font: { size: "caption1" }, maxLines: 2 }),
       ],
     };
   }
@@ -114,7 +101,7 @@ function renderWidget(family, results) {
         text("🛡 po0", { font: { size: "headline", weight: "bold" }, textColor: "#FFFFFF" }),
         { type: "spacer", length: 6 },
         text(current, { font: { size: "caption1", family: "Menlo" }, textColor: "#D9E2EC", minScale: 0.6, maxLines: 1 }),
-        text(ok + "/" + results.length + " 已加白", { font: { size: "subheadline", weight: "semibold" }, textColor: ok === results.length ? "#62D6A7" : "#FFCC66" }),
+        text(ok === results.length ? "已加入白名单" : "未加入白名单", { font: { size: "subheadline", weight: "semibold" }, textColor: ok === results.length ? "#62D6A7" : "#FFCC66" }),
       ],
     };
   }
@@ -129,11 +116,10 @@ function renderWidget(family, results) {
       children: [
         { type: "stack", direction: "row", alignItems: "center", children: [
           text("🛡 po0 防火墙", { font: { size: "headline", weight: "bold" }, textColor: "#FFFFFF", flex: 1 }),
-          text(ok + "/" + results.length + " 已加白", { font: { size: "caption1", weight: "semibold" }, textColor: ok === results.length ? "#62D6A7" : "#FFCC66" }),
+          text(ok === results.length ? "已加入白名单" : "未加入白名单", { font: { size: "caption1", weight: "semibold" }, textColor: ok === results.length ? "#62D6A7" : "#FFCC66" }),
         ] },
         text("出口：" + current, { font: { size: "caption1", family: "Menlo" }, textColor: "#D9E2EC", minScale: 0.6, maxLines: 1 }),
         { type: "stack", direction: "column", gap: 2, children: shortRows.length ? shortRows : [text("暂无白名单数据", { font: { size: "caption1" }, textColor: "#CBD5E1" })] },
-        { type: "stack", direction: "row", gap: 6, children: [button("立即加白", "#1677C8"), button("获取状态", "#536273")] },
       ],
     };
   }
@@ -147,11 +133,9 @@ function renderWidget(family, results) {
     children: [
       text("🛡 po0 防火墙", { font: { size: "title3", weight: "bold" }, textColor: "#FFFFFF" }),
       text("当前出口：" + current, { font: { size: "subheadline", family: "Menlo" }, textColor: "#D9E2EC", minScale: 0.65 }),
-      text("加白状态：" + ok + "/" + results.length + " · 点击箭头为当前网段", { font: { size: "caption1" }, textColor: "#9FB3C8" }),
+      text("加白状态：" + (ok === results.length ? "已加入白名单" : "未加入白名单") + " · 箭头为当前网段", { font: { size: "caption1" }, textColor: "#9FB3C8" }),
       { type: "stack", direction: "column", gap: 5, children: rows.length ? rows : [text("暂无白名单数据", { textColor: "#CBD5E1" })] },
-      { type: "spacer", length: 2 },
-      { type: "stack", direction: "row", gap: 8, children: [button("立即加白", "#1677C8"), button("获取状态", "#536273")] },
-      text("Widget 刷新时请求服务端；网络切换仍由自动脚本处理。", { font: { size: "caption2" }, textColor: "#8FA3B8", maxLines: 2 }),
+      text("已返回白名单；网络切换仍由自动脚本处理。", { font: { size: "caption2" }, textColor: "#8FA3B8", maxLines: 2 }),
     ],
   };
 }
