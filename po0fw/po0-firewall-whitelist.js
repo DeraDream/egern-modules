@@ -16,7 +16,7 @@
 
 const API_BASE = "https://124.221.69.228/api/firewall/"; // + <token> + "/add"
 const STORE_PREFIX = "po0_fw_";
-const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口
+const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口\nconst WIFI_QUIET_KEY = "po0_fw_wifi_quiet";
 
 // tokens 分隔符兼容 , | ; 、 空白；每段可带 @槽位 后缀
 function parseTokens(raw) {
@@ -225,11 +225,13 @@ function describe(ctx, index, c) {
 export default async function (ctx) {
   const tokens = parseTokens(ctx.env && ctx.env.tokens);
   if (tokens.length === 0) {
-    ctx.notify({
-      title: "po0 防火墙加白",
-      subtitle: "未配置 token",
-      body: "模块参数 tokens 填入 pgnfw_ token，多个用英文逗号分割",
-    });
+    if (!shouldMuteNotification(ctx)) {
+      ctx.notify({
+        title: "po0 防火墙加白",
+        subtitle: "未配置 token",
+        body: "模块参数 tokens 填入 pgnfw_ token，多个用英文逗号分割",
+      });
+    }
     return;
   }
 
