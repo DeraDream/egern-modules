@@ -1,0 +1,24 @@
+name: po0fw 全部槽位面板
+description: 只读展示固定槽位、FIFO 记录、剩余容量及本机出口命中情况，不执行加白。
+author: DeraDream
+
+compat_arguments:
+  token: ""
+
+rules:
+  - ip_cidr:
+      match: 124.221.69.228/32
+      policy: DIRECT
+      no_resolve: true
+
+scriptings:
+  - generic:
+      name: po0fw-slots
+      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/panel/po0fw-panel.js
+      timeout: 15
+      env:
+        token: "{{{token}}}"
+
+widgets:
+  - name: po0fw · 全部槽位
+    script_name: po0fw-slots
