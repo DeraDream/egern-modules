@@ -1,0 +1,21 @@
+name: po0 WiFi 通知静默
+description: 配置若干 WiFi 名称；当前连接命中时，仅静默 po0 防火墙自动加白的通知，不影响实际加白。
+author: DeraDream
+
+compat_arguments:
+  wifi_names: ""
+
+scriptings:
+  - network:
+      name: po0-wifi-quiet-network
+      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/wifi-quiet/wifi-quiet.js
+      timeout: 10
+      env:
+        wifi_names: "{{{wifi_names}}}"
+  - schedule:
+      name: po0-wifi-quiet-sync
+      cron: "*/5 * * * *"
+      script_url: https://raw.githubusercontent.com/DeraDream/egern-modules/main/po0fw/wifi-quiet/wifi-quiet.js
+      timeout: 10
+      env:
+        wifi_names: "{{{wifi_names}}}"
