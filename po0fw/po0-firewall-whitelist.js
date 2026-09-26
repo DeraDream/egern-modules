@@ -49,13 +49,56 @@ function onCellular(ctx) {
   }
 }
 
-function shouldMuteNotification(ctx) {
+function getQuietState(ctx) {
   try {
-    const quiet = ctx.storage.getJSON(WIFI_QUIET_KEY);
-    return !!(quiet && quiet.matched);
+    return ctx.storage.getJSON(WIFI_QUIET_KEY) || null;
   } catch (e) {
-    return false;
+    return null;
   }
+}
+
+function currentWifiSSID(ctx) {
+  try {
+    return String(
+      (ctx.device && ctx.device.wifi && ctx.device.wifi.ssid) || ""
+    ).trim();
+  } catch (e) {
+    return "";
+  }
+}
+
+function matchesQuietWifi(ssid, quiet) {
+  if (!ssid || !quiet || !Array.isArray(quiet.names)) return false;
+  const target = ssid.toLowerCase();
+  return quiet.names.some(function (name) {
+    return String(name || "").trim().toLowerCase() === target;
+  });
+}
+
+async function shouldMuteNotification(ctx) {
+  const startedAt = Date.now();
+
+  // 先用本次脚本拿到的实时 SSID + 已保存的 WiFi 名单直接判断。
+  // 这样即使两个 network 脚本执行顺序不同，也不依赖 matched 先被刷新。
+  let quiet = getQuietState(ctx);
+  const ssid = currentWifiSSID(ctx);
+  if (matchesQuietWifi(ssid, quiet)) return true;
+
+  // 网络刚切换时，Egern 可能先触发本脚本、后触发 wifi-quiet。
+  // 短暂等待并只接受“本次切网后”写入的新状态，避免读取上一次网络的 stale matched。
+  for (let i = 0; i < 6; i++) {
+    await sleep(200);
+    quiet = getQuietState(ctx);
+    if (
+      quiet &&
+      Number(quiet.updatedAt || 0) >= startedAt - 100 &&
+      quiet.matched === true
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function readHistory(ctx, key) {
@@ -235,7 +278,7 @@ function describe(ctx, index, c) {
 export default async function (ctx) {
   const tokens = parseTokens(ctx.env && ctx.env.tokens);
   if (tokens.length === 0) {
-    if (!shouldMuteNotification(ctx)) {
+    if (!(await shouldMuteNotification(ctx))) {
       ctx.notify({
         title: "po0 防火墙加白",
         subtitle: "未配置 token",
@@ -271,7 +314,7 @@ export default async function (ctx) {
   const title =
     "po0 加白 " + okCount + "/" + results.length + " · 出口 " + exitIp + (cellular ? " 📶" : "");
   // 仅在出口 IP 或加白状态较上次变化时通知；命中静默 WiFi 时仍正常加白但不通知
-  if (changed && !shouldMuteNotification(ctx)) {
+  if (changed && !(await shouldMuteNotification(ctx))) {
     ctx.notify({ title: "po0 防火墙加白", subtitle: title, body: lines.join("\n") });
   }
 }
