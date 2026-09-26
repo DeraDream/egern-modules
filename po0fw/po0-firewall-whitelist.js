@@ -48,6 +48,15 @@ function onCellular(ctx) {
   }
 }
 
+function shouldMuteNotification(ctx) {
+  try {
+    const quiet = ctx.storage.getJSON(WIFI_QUIET_KEY);
+    return !!(quiet && quiet.matched);
+  } catch (e) {
+    return false;
+  }
+}
+
 function readHistory(ctx, key) {
   let h;
   try {
@@ -260,8 +269,8 @@ export default async function (ctx) {
 
   const title =
     "po0 加白 " + okCount + "/" + results.length + " · 出口 " + exitIp + (cellular ? " 📶" : "");
-  // 仅在出口 IP 或加白状态较上次变化时通知，例行 cron 保持安静
-  if (changed) {
+  // 仅在出口 IP 或加白状态较上次变化时通知；命中静默 WiFi 时仍正常加白但不通知
+  if (changed && !shouldMuteNotification(ctx)) {
     ctx.notify({ title: "po0 防火墙加白", subtitle: title, body: lines.join("\n") });
   }
 }
