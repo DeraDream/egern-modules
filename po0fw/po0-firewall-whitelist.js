@@ -16,7 +16,8 @@
 
 const API_BASE = "https://124.221.69.228/api/firewall/"; // + <token> + "/add"
 const STORE_PREFIX = "po0_fw_";
-const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口\nconst WIFI_QUIET_KEY = "po0_fw_wifi_quiet";
+const HIST_WINDOW_MS = 24 * 3600 * 1000; // 📶 标记的记账窗口
+const WIFI_QUIET_KEY = "po0_fw_wifi_quiet";
 
 // tokens 分隔符兼容 , | ; 、 空白；每段可带 @槽位 后缀
 function parseTokens(raw) {
